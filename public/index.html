@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Testing Framework</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 600px; }
+        input, button { display: block; margin: 10px 0; padding: 8px; width: 100%; }
+        #result { white-space: pre-wrap; background: #f4f4f4; padding: 10px; margin-top: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>SMS Testing Framework</h1>
+    <form id="bombForm">
+        <input type="text" id="target" placeholder="Phone number (no country code)" required>
+        <input type="text" id="country" placeholder="Country code (e.g., 91)" value="91">
+        <input type="number" id="sms" placeholder="Number of SMS" value="20">
+        <input type="number" id="threads" placeholder="Concurrency" value="20">
+        <button type="submit">Send Bombs</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('bombForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const target = document.getElementById('target').value;
+            const country = document.getElementById('country').value;
+            const sms = document.getElementById('sms').value;
+            const threads = document.getElementById('threads').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/api/bomb', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target, country, sms: parseInt(sms), threads: parseInt(threads) })
+                });
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
