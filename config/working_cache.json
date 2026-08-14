@@ -1,1 +1,19 @@
-
+[
+  {
+    "name": "TextBelt (Demo)",
+    "cc": "1",
+    "url": "https://textbelt.com/text",
+    "method": "POST",
+    "data": {
+      "phone": "",
+      "message": "Test",
+      "key": "textbelt"
+    },
+    "target_param": "phone",
+    "data_type": "json",
+    "identifier": "\"success\":true",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+]
