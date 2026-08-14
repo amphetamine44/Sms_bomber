@@ -1,46 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SMS Testing Framework</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; max-width: 600px; }
-        input, button { display: block; margin: 10px 0; padding: 8px; width: 100%; }
-        #result { white-space: pre-wrap; background: #f4f4f4; padding: 10px; margin-top: 20px; border-radius: 5px; }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            border-bottom: 2px solid #1a73e8;
+            padding-bottom: 10px;
+        }
+        form {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        #result {
+            margin-top: 20px;
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            min-height: 60px;
+            color: #222;
+        }
+        .note {
+            font-size: 13px;
+            color: #777;
+            text-align: center;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
-    <h1>SMS Testing Framework</h1>
+    <h1>📱 SMS Testing Framework</h1>
     <form id="bombForm">
-        <input type="text" id="target" placeholder="Phone number (no country code)" required>
-        <input type="text" id="country" placeholder="Country code (e.g., 91)" value="91">
-        <input type="number" id="sms" placeholder="Number of SMS" value="20">
-        <input type="number" id="threads" placeholder="Concurrency" value="20">
-        <button type="submit">Send Bombs</button>
+        <div class="form-group">
+            <label for="target">Phone Number (No Country Code)</label>
+            <input type="text" id="target" placeholder="e.g., 9876543210" required />
+        </div>
+        <div class="form-group">
+            <label for="country">Country Code</label>
+            <input type="text" id="country" placeholder="e.g., 91" value="91" />
+        </div>
+        <div class="form-group">
+            <label for="sms">Number of SMS</label>
+            <input type="number" id="sms" placeholder="e.g., 20" value="20" min="1" />
+        </div>
+        <div class="form-group">
+            <label for="threads">Concurrency (Threads)</label>
+            <input type="number" id="threads" placeholder="e.g., 20" value="20" min="1" />
+        </div>
+        <button type="submit">🚀 Send Bombs</button>
     </form>
-    <div id="result"></div>
+    <div id="result">Results will appear here...</div>
+    <div class="note">⚠️ For authorised testing only. You must have permission.</div>
 
     <script>
         document.getElementById('bombForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const target = document.getElementById('target').value;
-            const country = document.getElementById('country').value;
-            const sms = document.getElementById('sms').value;
-            const threads = document.getElementById('threads').value;
+            const target = document.getElementById('target').value.trim();
+            const country = document.getElementById('country').value.trim() || '91';
+            const sms = parseInt(document.getElementById('sms').value) || 20;
+            const threads = parseInt(document.getElementById('threads').value) || 20;
             const resultDiv = document.getElementById('result');
-            resultDiv.textContent = 'Sending...';
+            resultDiv.textContent = '⏳ Sending requests...';
 
             try {
                 const response = await fetch('/api/bomb', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target, country, sms: parseInt(sms), threads: parseInt(threads) })
+                    body: JSON.stringify({ target, country, sms, threads })
                 });
                 const data = await response.json();
                 resultDiv.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
-                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.textContent = '❌ Error: ' + error.message;
             }
         });
     </script>
