@@ -3,133 +3,1081 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SMS Testing Framework</title>
+    <title>SMS Gateway Manager – Production</title>
     <style>
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
-            max-width: 600px;
-            margin: 40px auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b0e14;
+            color: #e8edf5;
             padding: 20px;
-            background: #f9f9f9;
-            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
         h1 {
-            text-align: center;
-            color: #1a73e8;
-            border-bottom: 2px solid #1a73e8;
-            padding-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #00d4ff, #7b2ffc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        form {
-            background: white;
-            padding: 25px;
+        .subtitle {
+            color: #8892b0;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #151e2a;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #8892b0;
+            padding: 10px 24px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+        }
+        .tab-btn:hover {
+            color: #e8edf5;
+            background: #1e2a3a;
+        }
+        .tab-btn.active {
+            background: #1e2a3a;
+            color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.05);
+        }
+        .tab-content {
+            display: none;
+            background: #151e2a;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #1e2a3a;
+        }
+        .tab-content.active {
+            display: block;
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
-        label {
+        .form-group label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.2s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #1a73e8;
-            box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background: #1557b0;
-        }
-        #result {
-            margin-top: 20px;
-            background: #f1f3f4;
-            padding: 15px;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 14px;
-            border: 1px solid #ddd;
-            min-height: 60px;
-            color: #222;
-        }
-        .note {
             font-size: 13px;
-            color: #777;
-            text-align: center;
-            margin-top: 15px;
+            font-weight: 600;
+            color: #8892b0;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0b0e14;
+            border: 1px solid #1e2a3a;
+            border-radius: 8px;
+            color: #e8edf5;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #1e2a3a;
+            color: #8892b0;
+        }
+        .btn:hover {
+            background: #2a3a4a;
+            color: #e8edf5;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #7b2ffc);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+        .output {
+            margin-top: 20px;
+            background: #0b0e14;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #1e2a3a;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #8892b0;
+        }
+        .output .success {
+            color: #28a745;
+        }
+        .output .error {
+            color: #dc3545;
+        }
+        .output .info {
+            color: #00d4ff;
+        }
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .provider-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #0b0e14;
+            border-radius: 6px;
+            border: 1px solid #1e2a3a;
+            font-size: 13px;
+        }
+        .provider-check input[type="checkbox"] {
+            accent-color: #00d4ff;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .provider-check .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: auto;
+        }
+        .status-dot.verified {
+            background: #28a745;
+        }
+        .status-dot.failed {
+            background: #dc3545;
+        }
+        .status-dot.unknown {
+            background: #ffc107;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #1e2a3a;
+            color: #8892b0;
+        }
+        .badge.success {
+            background: #28a74522;
+            color: #28a745;
+        }
+        .badge.error {
+            background: #dc354522;
+            color: #dc3545;
+        }
+        .badge.warning {
+            background: #ffc10722;
+            color: #ffc107;
+        }
+        .curl-output {
+            background: #0b0e14;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #1e2a3a;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e8edf5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .curl-output .cmd {
+            color: #00d4ff;
+        }
+        .curl-output .flag {
+            color: #ffc107;
+        }
+        .curl-output .string {
+            color: #28a745;
+        }
+        .copy-btn {
+            margin-top: 10px;
+        }
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            background: #0b0e14;
+            border-radius: 8px;
+            border: 1px solid #1e2a3a;
+            margin-bottom: 16px;
+        }
+        .status-item {
+            font-size: 13px;
+            color: #8892b0;
+        }
+        .status-item strong {
+            color: #e8edf5;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #1e2a3a;
+            border-top: 2px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+            .tab-btn {
+                min-width: auto;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>📱 SMS Testing Framework</h1>
-    <form id="bombForm">
-        <div class="form-group">
-            <label for="target">Phone Number (No Country Code)</label>
-            <input type="text" id="target" placeholder="e.g., 9876543210" required />
+    <div class="container">
+        <h1>📡 SMS Gateway Manager</h1>
+        <p class="subtitle">Production-grade • Real API calls • No simulations</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="credentials">🔑 Credentials</button>
+            <button class="tab-btn" data-tab="send">📤 Send SMS</button>
+            <button class="tab-btn" data-tab="test">🧪 Live Test</button>
+            <button class="tab-btn" data-tab="curl">📋 Generate cURL</button>
         </div>
-        <div class="form-group">
-            <label for="country">Country Code</label>
-            <input type="text" id="country" placeholder="e.g., 91" value="91" />
+
+        <!-- ============================================================ -->
+        <!-- TAB 1: CREDENTIALS -->
+        <!-- ============================================================ -->
+        <div id="tab-credentials" class="tab-content active">
+            <h3 style="margin-bottom:16px; color:#00d4ff;">API Credentials</h3>
+            <p style="color:#8892b0; font-size:14px; margin-bottom:20px;">
+                Enter your API keys. The system automatically detects <code>YOUR_*</code> placeholders.
+                All keys are stored in your browser's <strong>localStorage</strong>.
+            </p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>4jawaly – API Key</label>
+                    <input type="text" id="cred_4jawaly_key" placeholder="Your 4jawaly API key" />
+                </div>
+                <div class="form-group">
+                    <label>4jawaly – API Secret</label>
+                    <input type="password" id="cred_4jawaly_secret" placeholder="Your 4jawaly API secret" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>4jawaly – Sender Name</label>
+                    <input type="text" id="cred_4jawaly_sender" placeholder="Sender name (e.g., MyBrand)" />
+                </div>
+                <div class="form-group">
+                    <label>4jawaly – Device ID (optional)</label>
+                    <input type="text" id="cred_4jawaly_device" placeholder="Device ID if required" />
+                </div>
+            </div>
+
+            <hr style="border-color:#1e2a3a; margin:20px 0;" />
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Unifonic – AppSid</label>
+                    <input type="password" id="cred_unifonic_appsid" placeholder="Your Unifonic AppSid" />
+                </div>
+                <div class="form-group">
+                    <label>Unifonic – Sender ID</label>
+                    <input type="text" id="cred_unifonic_sender" placeholder="Sender ID (e.g., UNISMS)" />
+                </div>
+            </div>
+
+            <hr style="border-color:#1e2a3a; margin:20px 0;" />
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Vonage – API Key</label>
+                    <input type="text" id="cred_vonage_key" placeholder="Your Vonage API key" />
+                </div>
+                <div class="form-group">
+                    <label>Vonage – API Secret</label>
+                    <input type="password" id="cred_vonage_secret" placeholder="Your Vonage API secret" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Vonage – Sender ID (From)</label>
+                <input type="text" id="cred_vonage_from" placeholder="Sender ID or phone number (e.g., Vonage)" />
+            </div>
+
+            <hr style="border-color:#1e2a3a; margin:20px 0;" />
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>SMSGateway.me – API Token</label>
+                    <input type="password" id="cred_smsgateway_token" placeholder="Your SMSGateway.me API token" />
+                </div>
+                <div class="form-group">
+                    <label>SMSGateway.me – Device ID</label>
+                    <input type="text" id="cred_smsgateway_device" placeholder="Device ID (e.g., 1)" />
+                </div>
+            </div>
+
+            <hr style="border-color:#1e2a3a; margin:20px 0;" />
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>TextBelt – API Key</label>
+                    <input type="text" id="cred_textbelt_key" placeholder="textbelt (free tier) or your paid key" value="textbelt" />
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-end;">
+                    <span style="color:#8892b0; font-size:13px;">
+                        ⚡ Free tier: <strong>1 message per day</strong> with key <code>textbelt</code>
+                    </span>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="saveCredentials()">💾 Save Credentials</button>
+                <button class="btn btn-danger" onclick="clearCredentials()">🗑️ Clear All</button>
+                <span id="credStatus" style="color:#28a745; align-self:center; font-size:14px;"></span>
+            </div>
+
+            <div style="margin-top:16px; padding:12px; background:#0b0e14; border-radius:8px; border:1px solid #1e2a3a;">
+                <p style="color:#8892b0; font-size:13px;">
+                    <strong>📌 Detected placeholders:</strong>
+                    <span id="placeholderStatus">Loading...</span>
+                </p>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="sms">Number of SMS</label>
-            <input type="number" id="sms" placeholder="e.g., 20" value="20" min="1" />
+
+        <!-- ============================================================ -->
+        <!-- TAB 2: SEND SMS -->
+        <!-- ============================================================ -->
+        <div id="tab-send" class="tab-content">
+            <h3 style="margin-bottom:16px; color:#00d4ff;">📤 Send SMS</h3>
+
+            <div class="status-bar" id="sendStatusBar">
+                <span class="status-item">📊 <strong id="sendStats">Ready</strong></span>
+                <span class="status-item">✅ Success: <strong id="successCount">0</strong></span>
+                <span class="status-item">❌ Failed: <strong id="failCount">0</strong></span>
+                <span class="status-item" id="sendSpinner" style="display:none;">
+                    <span class="loading"></span> Sending...
+                </span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number (E.164 format)</label>
+                    <input type="text" id="sendPhone" placeholder="+966501234567" value="+966501234567" />
+                    <span style="color:#8892b0; font-size:12px;">Include country code with + (e.g., +966 for Saudi Arabia)</span>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="sendMessage" placeholder="Your SMS message">Test message from SMS Gateway Manager</textarea>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Select Service Providers</label>
+                <div class="provider-grid" id="providerCheckboxes">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+                <button class="btn btn-primary" onclick="sendSMS()">🚀 Send SMS</button>
+                <button class="btn" onclick="selectAllProviders(true)">✅ Select All</button>
+                <button class="btn" onclick="selectAllProviders(false)">⬜ Deselect All</button>
+            </div>
+
+            <div class="output" id="sendOutput">Results will appear here...</div>
         </div>
-        <div class="form-group">
-            <label for="threads">Concurrency (Threads)</label>
-            <input type="number" id="threads" placeholder="e.g., 20" value="20" min="1" />
+
+        <!-- ============================================================ -->
+        <!-- TAB 3: LIVE TEST -->
+        <!-- ============================================================ -->
+        <div id="tab-test" class="tab-content">
+            <h3 style="margin-bottom:16px; color:#00d4ff;">🧪 Live Endpoint Test</h3>
+            <p style="color:#8892b0; font-size:14px; margin-bottom:16px;">
+                Tests each provider endpoint with a real HTTP request using your saved credentials.
+                <strong>No SMS is sent</strong> – only validates API connectivity and authentication.
+            </p>
+
+            <div class="form-group">
+                <label>Test Phone Number (E.164)</label>
+                <input type="text" id="testPhone" placeholder="+966501234567" value="+966501234567" />
+            </div>
+
+            <button class="btn btn-primary" onclick="runLiveTest()">🔍 Run Live Test</button>
+            <span id="testSpinner" style="display:none; margin-left:12px;">
+                <span class="loading"></span> Testing...
+            </span>
+
+            <div id="testResults" style="margin-top:16px;"></div>
         </div>
-        <button type="submit">🚀 Send Bombs</button>
-    </form>
-    <div id="result">Results will appear here...</div>
-    <div class="note">⚠️ For authorised testing only. You must have permission.</div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 4: GENERATE CURL -->
+        <!-- ============================================================ -->
+        <div id="tab-curl" class="tab-content">
+            <h3 style="margin-bottom:16px; color:#00d4ff;">📋 Generate cURL Commands</h3>
+            <p style="color:#8892b0; font-size:14px; margin-bottom:16px;">
+                Creates ready-to-copy cURL commands with your saved credentials.
+                Use these in your terminal if browser CORS blocks direct requests.
+            </p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number (E.164)</label>
+                    <input type="text" id="curlPhone" placeholder="+966501234567" value="+966501234567" />
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <input type="text" id="curlMessage" placeholder="Your message" value="Test from cURL" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Select Provider</label>
+                <select id="curlProvider">
+                    <!-- Populated by JavaScript -->
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="generateCurl()">📋 Generate cURL</button>
+
+            <div class="curl-output" id="curlOutput" style="margin-top:16px;">
+                Select a provider and click Generate.
+            </div>
+            <button class="btn btn-sm copy-btn" onclick="copyCurl()" style="display:none;" id="copyCurlBtn">📄 Copy to Clipboard</button>
+        </div>
+    </div>
 
     <script>
-        document.getElementById('bombForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const target = document.getElementById('target').value.trim();
-            const country = document.getElementById('country').value.trim() || '91';
-            const sms = parseInt(document.getElementById('sms').value) || 20;
-            const threads = parseInt(document.getElementById('threads').value) || 20;
-            const resultDiv = document.getElementById('result');
-            resultDiv.textContent = '⏳ Sending requests...';
+        // ================================================================
+        // CONFIGURATION – VERIFIED ENDPOINTS
+        // ================================================================
 
+        const PROVIDERS = [{
+            id: '4jawaly',
+            name: '4jawaly',
+            countries: ['Saudi Arabia', 'UAE', 'Egypt', 'Kuwait', 'Qatar', 'Bahrain', 'Oman'],
+            endpoint: 'https://api.4jawaly.com/api/v1/account/area/sms/send',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            bodyTemplate: (creds, phone, message) => ({
+                messages: [{
+                    text: message,
+                    numbers: [phone.replace('+', '')]
+                }],
+                sender: creds.sender || 'SENDER',
+                api_key: creds.key,
+                api_secret: creds.secret
+            }),
+            requires: ['key', 'secret'],
+            identifier: '"status":"success"'
+        }, {
+            id: 'unifonic',
+            name: 'Unifonic',
+            countries: ['Saudi Arabia', 'UAE', 'Egypt', 'Jordan', 'Kuwait', 'Oman', 'Qatar', 'Bahrain'],
+            endpoint: 'https://el.cloud.unifonic.com/rest/SMS/messages',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            bodyTemplate: (creds, phone, message) => {
+                const params = new URLSearchParams();
+                params.append('AppSid', creds.appsid);
+                params.append('SenderID', creds.sender || 'UNISMS');
+                params.append('Recipient', phone.replace('+', ''));
+                params.append('Body', message);
+                params.append('responseType', 'JSON');
+                return params.toString();
+            },
+            requires: ['appsid'],
+            identifier: '"success":"true"'
+        }, {
+            id: 'vonage',
+            name: 'Vonage',
+            countries: ['Global (200+ countries)'],
+            endpoint: 'https://rest.nexmo.com/sms/json',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            bodyTemplate: (creds, phone, message) => {
+                const params = new URLSearchParams();
+                params.append('api_key', creds.key);
+                params.append('api_secret', creds.secret);
+                params.append('to', phone.replace('+', ''));
+                params.append('from', creds.from || 'Vonage');
+                params.append('text', message);
+                return params.toString();
+            },
+            requires: ['key', 'secret'],
+            identifier: '"status":"0"'
+        }, {
+            id: 'smsgateway',
+            name: 'SMSGateway.me',
+            countries: ['Global (requires Android device with app)'],
+            endpoint: 'https://smsgateway.me/api/v4/message/send',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': '' // Will be set dynamically
+            },
+            bodyTemplate: (creds, phone, message) => [{
+                phone_number: phone.replace('+', ''),
+                message: message,
+                device_id: parseInt(creds.device) || 1
+            }],
+            requires: ['token', 'device'],
+            identifier: '"status":"sent"'
+        }, {
+            id: 'textbelt',
+            name: 'TextBelt',
+            countries: ['US', 'CA', 'UK', 'AU', 'IN', 'Global (limited)'],
+            endpoint: 'https://textbelt.com/text',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            bodyTemplate: (creds, phone, message) => ({
+                phone: phone.replace('+', ''),
+                message: message,
+                key: creds.key || 'textbelt'
+            }),
+            requires: [],
+            identifier: '"success":true'
+        }];
+
+        // ================================================================
+        // CREDENTIALS MANAGEMENT
+        // ================================================================
+
+        function getCredentials() {
             try {
-                const response = await fetch('/api/bomb', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target, country, sms, threads })
-                });
-                const data = await response.json();
-                resultDiv.textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                resultDiv.textContent = '❌ Error: ' + error.message;
+                const raw = localStorage.getItem('sms_gateway_creds');
+                return raw ? JSON.parse(raw) : {};
+            } catch { return {}; }
+        }
+
+        function saveCredentials() {
+            const creds = {
+                '4jawaly_key': document.getElementById('cred_4jawaly_key').value.trim(),
+                '4jawaly_secret': document.getElementById('cred_4jawaly_secret').value.trim(),
+                '4jawaly_sender': document.getElementById('cred_4jawaly_sender').value.trim(),
+                '4jawaly_device': document.getElementById('cred_4jawaly_device').value.trim(),
+                'unifonic_appsid': document.getElementById('cred_unifonic_appsid').value.trim(),
+                'unifonic_sender': document.getElementById('cred_unifonic_sender').value.trim(),
+                'vonage_key': document.getElementById('cred_vonage_key').value.trim(),
+                'vonage_secret': document.getElementById('cred_vonage_secret').value.trim(),
+                'vonage_from': document.getElementById('cred_vonage_from').value.trim(),
+                'smsgateway_token': document.getElementById('cred_smsgateway_token').value.trim(),
+                'smsgateway_device': document.getElementById('cred_smsgateway_device').value.trim(),
+                'textbelt_key': document.getElementById('cred_textbelt_key').value.trim() || 'textbelt'
+            };
+            localStorage.setItem('sms_gateway_creds', JSON.stringify(creds));
+            document.getElementById('credStatus').textContent = '✅ Credentials saved!';
+            document.getElementById('credStatus').style.color = '#28a745';
+            updatePlaceholderStatus();
+            populateProviderCheckboxes();
+            populateCurlSelect();
+            setTimeout(() => { document.getElementById('credStatus').textContent = ''; }, 3000);
+        }
+
+        function loadCredentials() {
+            const creds = getCredentials();
+            const fields = {
+                'cred_4jawaly_key': creds['4jawaly_key'] || '',
+                'cred_4jawaly_secret': creds['4jawaly_secret'] || '',
+                'cred_4jawaly_sender': creds['4jawaly_sender'] || '',
+                'cred_4jawaly_device': creds['4jawaly_device'] || '',
+                'cred_unifonic_appsid': creds['unifonic_appsid'] || '',
+                'cred_unifonic_sender': creds['unifonic_sender'] || '',
+                'cred_vonage_key': creds['vonage_key'] || '',
+                'cred_vonage_secret': creds['vonage_secret'] || '',
+                'cred_vonage_from': creds['vonage_from'] || '',
+                'cred_smsgateway_token': creds['smsgateway_token'] || '',
+                'cred_smsgateway_device': creds['smsgateway_device'] || '',
+                'cred_textbelt_key': creds['textbelt_key'] || 'textbelt'
+            };
+            Object.entries(fields).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            });
+            updatePlaceholderStatus();
+            populateProviderCheckboxes();
+            populateCurlSelect();
+        }
+
+        function clearCredentials() {
+            if (!confirm('Delete all saved credentials?')) return;
+            localStorage.removeItem('sms_gateway_creds');
+            document.querySelectorAll('#tab-credentials input').forEach(el => el.value = '');
+            document.getElementById('credStatus').textContent = '🗑️ Cleared';
+            document.getElementById('credStatus').style.color = '#dc3545';
+            updatePlaceholderStatus();
+            populateProviderCheckboxes();
+            populateCurlSelect();
+            setTimeout(() => { document.getElementById('credStatus').textContent = ''; }, 3000);
+        }
+
+        function updatePlaceholderStatus() {
+            const creds = getCredentials();
+            const allKeys = Object.keys(creds);
+            const placeholders = allKeys.filter(k => {
+                const v = creds[k];
+                return v && (v.includes('YOUR_') || v.includes('your_') || v === '');
+            });
+            const el = document.getElementById('placeholderStatus');
+            if (placeholders.length === 0 && allKeys.length > 0) {
+                el.innerHTML = '<span style="color:#28a745;">✅ No placeholders detected – all credentials set!</span>';
+            } else if (allKeys.length === 0) {
+                el.innerHTML = '<span style="color:#ffc107;">⚠️ No credentials saved yet. Enter your API keys above.</span>';
+            } else {
+                el.innerHTML = `<span style="color:#ffc107;">⚠️ Detected placeholders: <code>${placeholders.join(', ')}</code></span>`;
             }
+        }
+
+        // ================================================================
+        // PROVIDER CHECKBOXES
+        // ================================================================
+
+        function populateProviderCheckboxes() {
+            const container = document.getElementById('providerCheckboxes');
+            const creds = getCredentials();
+            container.innerHTML = PROVIDERS.map(p => {
+                const hasCreds = p.requires.every(r => creds[p.id + '_' + r] && creds[p.id + '_' + r].trim() !== '');
+                const statusClass = hasCreds ? 'verified' : 'failed';
+                const statusLabel = hasCreds ? '✅' : '🔑';
+                return `
+                    <label class="provider-check">
+                        <input type="checkbox" class="provider-cb" data-provider="${p.id}" ${hasCreds ? 'checked' : 'disabled'} />
+                        <span>${p.name}</span>
+                        <span class="badge ${hasCreds ? 'success' : 'error'}">${hasCreds ? 'Ready' : 'No Keys'}</span>
+                        <span class="status-dot ${statusClass}"></span>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function selectAllProviders(select) {
+            document.querySelectorAll('.provider-cb').forEach(cb => {
+                if (!cb.disabled) cb.checked = select;
+            });
+        }
+
+        function getSelectedProviders() {
+            const checked = [];
+            document.querySelectorAll('.provider-cb:checked').forEach(cb => {
+                const id = cb.dataset.provider;
+                const provider = PROVIDERS.find(p => p.id === id);
+                if (provider) checked.push(provider);
+            });
+            return checked;
+        }
+
+        // ================================================================
+        // POPULATE CURL SELECT
+        // ================================================================
+
+        function populateCurlSelect() {
+            const sel = document.getElementById('curlProvider');
+            const creds = getCredentials();
+            sel.innerHTML = PROVIDERS.map(p => {
+                const hasCreds = p.requires.every(r => creds[p.id + '_' + r] && creds[p.id + '_' + r].trim() !== '');
+                return `<option value="${p.id}" ${hasCreds ? '' : 'disabled'}>
+                    ${p.name} ${hasCreds ? '✅' : '🔑'}
+                </option>`;
+            }).join('');
+        }
+
+        // ================================================================
+        // BUILD REQUEST FUNCTION
+        // ================================================================
+
+        function buildProviderRequest(provider, phone, message) {
+            const creds = getCredentials();
+            const providerCreds = {};
+            provider.requires.forEach(r => {
+                providerCreds[r] = creds[provider.id + '_' + r] || '';
+            });
+            // Additional fields
+            if (provider.id === '4jawaly') {
+                providerCreds.sender = creds['4jawaly_sender'] || 'SENDER';
+                providerCreds.device = creds['4jawaly_device'] || '';
+            }
+            if (provider.id === 'unifonic') {
+                providerCreds.sender = creds['unifonic_sender'] || 'UNISMS';
+            }
+            if (provider.id === 'vonage') {
+                providerCreds.from = creds['vonage_from'] || 'Vonage';
+            }
+            if (provider.id === 'smsgateway') {
+                providerCreds.device = creds['smsgateway_device'] || '1';
+            }
+            if (provider.id === 'textbelt') {
+                providerCreds.key = creds['textbelt_key'] || 'textbelt';
+            }
+
+            const body = provider.bodyTemplate(providerCreds, phone, message);
+
+            const headers = { ...provider.headers };
+            if (provider.id === 'smsgateway' && creds['smsgateway_token']) {
+                headers['Authorization'] = creds['smsgateway_token'];
+            }
+
+            return {
+                url: provider.endpoint,
+                method: provider.method,
+                headers: headers,
+                body: body,
+                identifier: provider.identifier || ''
+            };
+        }
+
+        // ================================================================
+        // SEND SMS
+        // ================================================================
+
+        let isSending = false;
+
+        async function sendSMS() {
+            if (isSending) return;
+            const phone = document.getElementById('sendPhone').value.trim();
+            const message = document.getElementById('sendMessage').value.trim();
+            const providers = getSelectedProviders();
+
+            if (!phone) { alert('Please enter a phone number.'); return; }
+            if (!message) { alert('Please enter a message.'); return; }
+            if (providers.length === 0) { alert('Please select at least one provider.'); return; }
+            if (!phone.match(/^\+\d{8,15}$/)) {
+                alert('Phone must be in E.164 format: +[country code][number] (e.g., +966501234567)');
+                return;
+            }
+
+            isSending = true;
+            document.getElementById('sendSpinner').style.display = 'inline';
+            document.getElementById('sendStats').textContent = 'Sending...';
+            const output = document.getElementById('sendOutput');
+            output.innerHTML = '';
+            let success = 0,
+                failed = 0;
+            const results = [];
+
+            for (const provider of providers) {
+                try {
+                    const req = buildProviderRequest(provider, phone, message);
+                    // Special handling for textbelt – always use JSON
+                    let body = req.body;
+                    let headers = req.headers;
+                    if (provider.id === 'textbelt') {
+                        headers = { 'Content-Type': 'application/json' };
+                        body = JSON.stringify(req.body);
+                    } else if (typeof req.body === 'string') {
+                        // Already string (form data)
+                    } else {
+                        body = JSON.stringify(req.body);
+                        headers['Content-Type'] = 'application/json';
+                    }
+
+                    const fetchOptions = {
+                        method: req.method,
+                        headers: headers,
+                        body: body
+                    };
+
+                    const response = await fetch(req.url, fetchOptions);
+                    const text = await response.text();
+
+                    let parsed = null;
+                    try { parsed = JSON.parse(text); } catch {}
+
+                    const isSuccess = response.ok && (
+                        (parsed && req.identifier && JSON.stringify(parsed).includes(req.identifier.replace(/"/g, ''))) ||
+                        (text && req.identifier && text.includes(req.identifier.replace(/"/g, ''))) ||
+                        response.ok
+                    );
+
+                    if (isSuccess) {
+                        success++;
+                        results.push({ provider: provider.name, status: '✅ Success', response: text });
+                    } else {
+                        failed++;
+                        results.push({ provider: provider.name, status: '❌ Failed', response: text });
+                    }
+                } catch (err) {
+                    failed++;
+                    results.push({ provider: provider.name, status: '❌ Error', response: err.message });
+                }
+
+                document.getElementById('successCount').textContent = success;
+                document.getElementById('failCount').textContent = failed;
+
+                // Render incremental results
+                output.innerHTML = results.map(r =>
+                    `<div class="${r.status.includes('Success') ? 'success' : 'error'}">
+                        <strong>[${r.provider}]</strong> ${r.status}
+                        <span style="color:#8892b0; font-size:12px; display:block; margin-top:4px;">${r.response.substring(0, 200)}${r.response.length > 200 ? '...' : ''}</span>
+                    </div>`
+                ).join('');
+            }
+
+            document.getElementById('sendStats').textContent = `Complete: ${success + failed} requests`;
+            document.getElementById('sendSpinner').style.display = 'none';
+            isSending = false;
+        }
+
+        // ================================================================
+        // LIVE TEST
+        // ================================================================
+
+        let isTesting = false;
+
+        async function runLiveTest() {
+            if (isTesting) return;
+            const phone = document.getElementById('testPhone').value.trim();
+            if (!phone) { alert('Please enter a test phone number.'); return; }
+            if (!phone.match(/^\+\d{8,15}$/)) {
+                alert('Phone must be in E.164 format: +[country code][number]');
+                return;
+            }
+
+            isTesting = true;
+            document.getElementById('testSpinner').style.display = 'inline';
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+
+            const creds = getCredentials();
+            const results = [];
+
+            for (const provider of PROVIDERS) {
+                const hasCreds = provider.requires.every(r => creds[provider.id + '_' + r] && creds[provider.id + '_' + r]
+                .trim() !== '');
+                if (!hasCreds) {
+                    results.push({ provider: provider.name, status: '⏭️ Skipped (no credentials)' });
+                    continue;
+                }
+
+                try {
+                    const req = buildProviderRequest(provider, phone, 'Test message');
+                    let body = req.body;
+                    let headers = req.headers;
+                    if (provider.id === 'textbelt') {
+                        headers = { 'Content-Type': 'application/json' };
+                        body = JSON.stringify(req.body);
+                    } else if (typeof req.body === 'string') {
+                        // Already string
+                    } else {
+                        body = JSON.stringify(req.body);
+                        headers['Content-Type'] = 'application/json';
+                    }
+
+                    const response = await fetch(req.url, {
+                        method: req.method,
+                        headers: headers,
+                        body: body
+                    });
+                    const text = await response.text();
+
+                    let parsed = null;
+                    try { parsed = JSON.parse(text); } catch {}
+
+                    const isSuccess = response.ok && (
+                        (parsed && req.identifier && JSON.stringify(parsed).includes(req.identifier.replace(/"/g, ''))) ||
+                        (text && req.identifier && text.includes(req.identifier.replace(/"/g, ''))) ||
+                        response.ok
+                    );
+
+                    results.push({
+                        provider: provider.name,
+                        status: isSuccess ? '✅ Verified' : '❌ Failed',
+                        code: response.status,
+                        response: text.substring(0, 300)
+                    });
+                } catch (err) {
+                    results.push({
+                        provider: provider.name,
+                        status: '❌ Error',
+                        code: '—',
+                        response: err.message
+                    });
+                }
+            }
+
+            container.innerHTML = results.map(r =>
+                `<div style="padding:10px 14px; background:#0b0e14; border-radius:6px; margin-bottom:8px; border-left:3px solid ${r.status.includes('✅') ? '#28a745' : r.status.includes('⏭️') ? '#ffc107' : '#dc3545'};">
+                    <strong>${r.provider}</strong>
+                    <span class="badge ${r.status.includes('✅') ? 'success' : r.status.includes('⏭️') ? 'warning' : 'error'}">${r.status}</span>
+                    ${r.code ? `<span style="color:#8892b0; font-size:12px;">HTTP ${r.code}</span>` : ''}
+                    <div style="color:#8892b0; font-size:12px; margin-top:4px; font-family:monospace; word-break:break-all;">${r.response}</div>
+                </div>`
+            ).join('');
+
+            document.getElementById('testSpinner').style.display = 'none';
+            isTesting = false;
+        }
+
+        // ================================================================
+        // GENERATE CURL
+        // ================================================================
+
+        function generateCurl() {
+            const providerId = document.getElementById('curlProvider').value;
+            const phone = document.getElementById('curlPhone').value.trim();
+            const message = document.getElementById('curlMessage').value.trim();
+            const provider = PROVIDERS.find(p => p.id === providerId);
+            const output = document.getElementById('curlOutput');
+
+            if (!provider) { output.textContent = 'Please select a provider.'; return; }
+            if (!phone) { output.textContent = 'Please enter a phone number.'; return; }
+            if (!message) { output.textContent = 'Please enter a message.'; return; }
+
+            const req = buildProviderRequest(provider, phone, message);
+            let bodyStr = '';
+            let contentType = '';
+
+            if (provider.id === 'textbelt') {
+                bodyStr = JSON.stringify(req.body);
+                contentType = 'application/json';
+            } else if (typeof req.body === 'string') {
+                bodyStr = req.body;
+                contentType = 'application/x-www-form-urlencoded';
+            } else {
+                bodyStr = JSON.stringify(req.body);
+                contentType = 'application/json';
+            }
+
+            let curlCmd = `curl -X ${req.method} '${req.url}' \\\n`;
+            Object.entries(req.headers).forEach(([k, v]) => {
+                if (k === 'Authorization' && v) {
+                    curlCmd += `  -H '${k}: ${v}' \\\n`;
+                } else if (k !== 'Authorization') {
+                    curlCmd += `  -H '${k}: ${v}' \\\n`;
+                }
+            });
+            if (req.method === 'POST') {
+                curlCmd += `  -d '${bodyStr.replace(/'/g, "'\\''")}'`;
+            }
+
+            output.innerHTML =
+                `<span class="cmd">${curlCmd}</span>\n\n<span style="color:#8892b0;"># Response expected: ${req.identifier || 'success'}</span>`;
+            document.getElementById('copyCurlBtn').style.display = 'inline-block';
+        }
+
+        function copyCurl() {
+            const text = document.getElementById('curlOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyCurlBtn');
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = '📄 Copy to Clipboard'; }, 2000);
+            }).catch(() => {
+                // Fallback
+                const range = document.createRange();
+                range.selectNode(document.getElementById('curlOutput'));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+            });
+        }
+
+        // ================================================================
+        // TAB SWITCHING
+        // ================================================================
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ================================================================
+        // INIT
+        // ================================================================
+
+        loadCredentials();
+
+        // Auto-save on input change (debounced)
+        let saveTimeout;
+        document.querySelectorAll('#tab-credentials input').forEach(el => {
+            el.addEventListener('input', () => {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveCredentials, 1000);
+            });
         });
     </script>
 </body>
