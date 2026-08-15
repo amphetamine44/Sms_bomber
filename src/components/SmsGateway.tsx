@@ -220,17 +220,17 @@ export default function SmsGateway() {
   }, [creds]);
 
   // Send form
-  const [phone, setPhone] = useState('+966501234567');
-  const [message, setMessage] = useState('Test message from Gateway');
+  const [phone, setPhone] = useState('');
+  const [message, setMessage] = useState('');
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
 
   // Test form
-  const [testPhone, setTestPhone] = useState('+966501234567');
+  const [testPhone, setTestPhone] = useState('');
   const [testResults, setTestResults] = useState<Array<{ provider: string; status: string; code?: number; response: string }>>([]);
   const [testing, setTesting] = useState(false);
 
   // Curl form
-  const [curlPhone, setCurlPhone] = useState('+966501234567');
+  const [curlPhone, setCurlPhone] = useState('');
   const [curlMessage, setCurlMessage] = useState('Test from cURL');
   const [curlProvider, setCurlProvider] = useState('4jawaly');
   const [curlCmd, setCurlCmd] = useState('');
@@ -486,12 +486,12 @@ export default function SmsGateway() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number (E.164)</Label>
-                  <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+966501234567" />
+                  <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g., +966501234567" />
                   <p className="text-xs text-muted-foreground">Include country code with +</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
-                  <Textarea id="message" value={message} onChange={e => setMessage(e.target.value)} placeholder="Your SMS message" rows={3} />
+                  <Textarea id="message" value={message} onChange={e => setMessage(e.target.value)} placeholder="Enter your SMS message" rows={3} />
                 </div>
               </div>
 
@@ -550,7 +550,7 @@ export default function SmsGateway() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="testPhone">Test Phone Number (E.164)</Label>
-                <Input id="testPhone" value={testPhone} onChange={e => setTestPhone(e.target.value)} placeholder="+966501234567" />
+                <Input id="testPhone" value={testPhone} onChange={e => setTestPhone(e.target.value)} placeholder="e.g., +966501234567" />
               </div>
               <Button onClick={handleTest} disabled={testing}>
                 {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
@@ -585,7 +585,7 @@ export default function SmsGateway() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="curlPhone">Phone Number (E.164)</Label>
-                  <Input id="curlPhone" value={curlPhone} onChange={e => setCurlPhone(e.target.value)} placeholder="+966501234567" />
+                  <Input id="curlPhone" value={curlPhone} onChange={e => setCurlPhone(e.target.value)} placeholder="e.g., +966501234567" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="curlMessage">Message</Label>
@@ -626,4 +626,4 @@ export default function SmsGateway() {
       </Tabs>
     </div>
   );
-}
+    }
