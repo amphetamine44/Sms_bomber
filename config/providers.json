@@ -1,68 +1,30 @@
 {
-  "providers": [
-    {
-      "name": "TextBelt (Demo)",
-      "cc": "1",
-      "url": "https://textbelt.com/text",
-      "method": "POST",
-      "data": {
-        "phone": "",
-        "message": "Test",
-        "key": "textbelt"
-      },
-      "target_param": "phone",
-      "data_type": "json",
-      "identifier": "\"success\":true",
-      "headers": {
-        "Content-Type": "application/json"
-      }
+  "sendotp": {
+    "method": "post",
+    "url": "https://api.sendotp.dev/v1/send_otp",
+    "headers": {
+      "Authorization": "Bearer YOUR_SENDOTP_API_KEY",
+      "Content-Type": "application/json"
     },
-    {
-      "name": "SMSGateway (Test)",
-      "cc": "91",
-      "url": "http://api.smsgateway.me/api/v4/message/send",
-      "method": "POST",
-      "data": {
-        "device_id": "1",
-        "number": "",
-        "message": "Test"
-      },
-      "target_param": "number",
-      "data_type": "json",
-      "identifier": "\"status\":\"sent\"",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
+    "parameters": {
+      "phone": "Replace phonenumber here"
     },
-    {
-      "name": "Twilio (Sandbox)",
-      "cc": "1",
-      "url": "https://api.twilio.com/2010-04-01/Accounts/ACxxx/Messages.json",
-      "method": "POST",
-      "data": {
-        "To": "",
-        "From": "+1234567890",
-        "Body": "Test"
-      },
-      "target_param": "To",
-      "data_type": "form",
-      "identifier": "\"sid\"",
-      "headers": {
-        "Authorization": "Basic BASE64_ENCODED"
-      }
+    "identifier": "The OTP was sent successfully"
+  },
+  "taqnyat_sa": {
+    "method": "post",
+    "url": "https://api.taqnyat.sa/v1/verify/send",
+    "headers": {
+      "Authorization": "Bearer YOUR_TAQNYAT_TOKEN",
+      "Content-Type": "application/json"
     },
-    {
-      "name": "LocalMock (Sandbox)",
-      "cc": "all",
-      "url": "http://localhost:8080/sms",
-      "method": "POST",
-      "data": {
-        "to": "",
-        "message": "Test"
-      },
-      "target_param": "to",
-      "data_type": "json",
-      "identifier": "OK"
-    }
-  ]
+    "parameters": {
+      "numbers": ["Replace phonenumber here"],
+      "method": "sms",
+      "sender": "YOUR_SENDER_NAME",
+      "lang": "ar",
+      "requestId": "1"
+    },
+    "identifier": "5"
+  }
 }
