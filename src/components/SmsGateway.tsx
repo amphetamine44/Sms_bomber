@@ -8,23 +8,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Copy, Check, Send, Terminal, ShieldCheck } from 'lucide-react';
+import { Loader2, Copy, Send, Terminal, ShieldCheck } from 'lucide-react';
 
-// Types
 type Provider = {
   id: string;
   name: string;
   countries: string[];
-  endpoint: string;
+  endpoint: string | ((creds: Record<string, string>) => string);
   method: 'GET' | 'POST';
-  headers: Record<string, string>;
+  headers: Record<string, string> | ((creds: Record<string, string>) => Record<string, string>);
   bodyTemplate: (creds: Record<string, string>, phone: string, message: string) => any;
   requires: string[];
   identifier: string;
 };
 
-// ── Provider definitions (exactly as verified) ──
 const PROVIDERS: Provider[] = [
+  // ---- Existing providers (kept unchanged) ----
   {
     id: '4jawaly',
     name: '4jawaly',
@@ -109,9 +108,74 @@ const PROVIDERS: Provider[] = [
     requires: [],
     identifier: '"success":true',
   },
+  {
+    id: 'twilio',
+    name: 'Twilio',
+    countries: ['Global (200+ countries)'],
+    endpoint: (creds) =>
+      `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`,
+    method: 'POST',
+    headers: (creds) => ({
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + btoa(creds.accountSid + ':' + creds.authToken),
+    }),
+    bodyTemplate: (creds, phone, message) => {
+      const params = new URLSearchParams();
+      params.append('To', phone);
+      if (creds.messagingServiceSid) {
+        params.append('MessagingServiceSid', creds.messagingServiceSid);
+      } else {
+        params.append('From', creds.from || '');
+      }
+      params.append('Body', message);
+      return params.toString();
+    },
+    requires: ['accountSid', 'authToken'],
+    identifier: '"sid"',
+  },
+  // ---- NEW PROVIDERS ----
+  {
+    id: 'smsgatewayhub',
+    name: 'SMSGatewayHub',
+    countries: ['India', 'Global (varies)'],
+    endpoint: 'https://www.smsgatewayhub.com/api/mt/SendSMS',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    bodyTemplate: (creds, phone, message) => {
+      const params = new URLSearchParams();
+      params.append('APIKey', creds.apiKey);
+      params.append('senderid', creds.senderId);
+      params.append('number', phone.replace('+', ''));
+      params.append('text', message);
+      if (creds.channel) params.append('channel', creds.channel);
+      if (creds.route) params.append('route', creds.route);
+      return params.toString();
+    },
+    requires: ['apiKey', 'senderId'],
+    identifier: '"ErrorCode":"000"',
+  },
+  {
+    id: 'goip',
+    name: 'GoIP Gateway',
+    countries: ['Self‑hosted (any)'],
+    endpoint: (creds) => `http://${creds.gatewayIp}/goip/sendsms/`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    bodyTemplate: (creds, phone, message) => ({
+      auth: {
+        username: creds.username,
+        password: creds.password,
+      },
+      provider: creds.provider || 'Generic',
+      number: phone.replace('+', ''),
+      content: message,
+    }),
+    requires: ['gatewayIp', 'username', 'password'],
+    identifier: '"status":"success"',
+  },
 ];
 
-// ── Hooks ──
+// ── Hooks (unchanged) ──
 function useCredentials() {
   const [creds, setCreds] = useState<Record<string, string>>(() => {
     try {
@@ -146,12 +210,11 @@ function useSmsSender() {
 
     for (const provider of providers) {
       try {
-        // Build request
         const providerCreds: Record<string, string> = {};
         provider.requires.forEach(r => {
           providerCreds[r] = creds[provider.id + '_' + r] || '';
         });
-        // Add extra fields
+        // Provider‑specific extra fields
         if (provider.id === '4jawaly') {
           providerCreds.sender = creds['4jawaly_sender'] || 'SENDER';
         }
@@ -167,10 +230,35 @@ function useSmsSender() {
         if (provider.id === 'textbelt') {
           providerCreds.key = creds['textbelt_key'] || 'textbelt';
         }
+        if (provider.id === 'twilio') {
+          providerCreds.accountSid = creds['twilio_accountSid'] || '';
+          providerCreds.authToken = creds['twilio_authToken'] || '';
+          providerCreds.from = creds['twilio_from'] || '';
+          providerCreds.messagingServiceSid = creds['twilio_messagingServiceSid'] || '';
+        }
+        if (provider.id === 'smsgatewayhub') {
+          providerCreds.apiKey = creds['smsgatewayhub_apiKey'] || '';
+          providerCreds.senderId = creds['smsgatewayhub_senderId'] || '';
+          providerCreds.channel = creds['smsgatewayhub_channel'] || '';
+          providerCreds.route = creds['smsgatewayhub_route'] || '';
+        }
+        if (provider.id === 'goip') {
+          providerCreds.gatewayIp = creds['goip_gatewayIp'] || '';
+          providerCreds.username = creds['goip_username'] || '';
+          providerCreds.password = creds['goip_password'] || '';
+          providerCreds.provider = creds['goip_provider'] || '';
+        }
+
+        const endpoint = typeof provider.endpoint === 'function'
+          ? provider.endpoint(providerCreds)
+          : provider.endpoint;
+
+        let headers = typeof provider.headers === 'function'
+          ? provider.headers(providerCreds)
+          : { ...provider.headers };
 
         const body = provider.bodyTemplate(providerCreds, phone, message);
         let finalBody: any = body;
-        let headers = { ...provider.headers };
         if (provider.id === 'textbelt') {
           headers = { 'Content-Type': 'application/json' };
           finalBody = JSON.stringify(body);
@@ -181,7 +269,7 @@ function useSmsSender() {
           headers['Content-Type'] = 'application/json';
         }
 
-        const response = await fetch(provider.endpoint, {
+        const response = await fetch(endpoint, {
           method: provider.method,
           headers,
           body: finalBody,
@@ -213,23 +301,19 @@ export default function SmsGateway() {
   const { creds, saveCreds, clearCreds } = useCredentials();
   const { loading, results, send } = useSmsSender();
 
-  // Credentials state
   const [localCreds, setLocalCreds] = useState(creds);
   useEffect(() => {
     setLocalCreds(creds);
   }, [creds]);
 
-  // Send form
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
 
-  // Test form
   const [testPhone, setTestPhone] = useState('');
   const [testResults, setTestResults] = useState<Array<{ provider: string; status: string; code?: number; response: string }>>([]);
   const [testing, setTesting] = useState(false);
 
-  // Curl form
   const [curlPhone, setCurlPhone] = useState('');
   const [curlMessage, setCurlMessage] = useState('Test from cURL');
   const [curlProvider, setCurlProvider] = useState('4jawaly');
@@ -280,7 +364,6 @@ export default function SmsGateway() {
         continue;
       }
       try {
-        // Build request (same as send but with dummy message)
         const providerCreds: Record<string, string> = {};
         provider.requires.forEach(r => {
           providerCreds[r] = creds[provider.id + '_' + r] || '';
@@ -290,10 +373,35 @@ export default function SmsGateway() {
         if (provider.id === 'vonage') providerCreds.from = creds['vonage_from'] || 'Vonage';
         if (provider.id === 'smsgateway') providerCreds.device = creds['smsgateway_device'] || '1';
         if (provider.id === 'textbelt') providerCreds.key = creds['textbelt_key'] || 'textbelt';
+        if (provider.id === 'twilio') {
+          providerCreds.accountSid = creds['twilio_accountSid'] || '';
+          providerCreds.authToken = creds['twilio_authToken'] || '';
+          providerCreds.from = creds['twilio_from'] || '';
+          providerCreds.messagingServiceSid = creds['twilio_messagingServiceSid'] || '';
+        }
+        if (provider.id === 'smsgatewayhub') {
+          providerCreds.apiKey = creds['smsgatewayhub_apiKey'] || '';
+          providerCreds.senderId = creds['smsgatewayhub_senderId'] || '';
+          providerCreds.channel = creds['smsgatewayhub_channel'] || '';
+          providerCreds.route = creds['smsgatewayhub_route'] || '';
+        }
+        if (provider.id === 'goip') {
+          providerCreds.gatewayIp = creds['goip_gatewayIp'] || '';
+          providerCreds.username = creds['goip_username'] || '';
+          providerCreds.password = creds['goip_password'] || '';
+          providerCreds.provider = creds['goip_provider'] || '';
+        }
+
+        const endpoint = typeof provider.endpoint === 'function'
+          ? provider.endpoint(providerCreds)
+          : provider.endpoint;
+
+        let headers = typeof provider.headers === 'function'
+          ? provider.headers(providerCreds)
+          : { ...provider.headers };
 
         const body = provider.bodyTemplate(providerCreds, testPhone, 'Test');
         let finalBody: any = body;
-        let headers = { ...provider.headers };
         if (provider.id === 'textbelt') {
           headers = { 'Content-Type': 'application/json' };
           finalBody = JSON.stringify(body);
@@ -304,7 +412,7 @@ export default function SmsGateway() {
           headers['Content-Type'] = 'application/json';
         }
 
-        const response = await fetch(provider.endpoint, {
+        const response = await fetch(endpoint, {
           method: provider.method,
           headers,
           body: finalBody,
@@ -341,23 +449,45 @@ export default function SmsGateway() {
     if (provider.id === 'vonage') providerCreds.from = creds['vonage_from'] || 'Vonage';
     if (provider.id === 'smsgateway') providerCreds.device = creds['smsgateway_device'] || '1';
     if (provider.id === 'textbelt') providerCreds.key = creds['textbelt_key'] || 'textbelt';
+    if (provider.id === 'twilio') {
+      providerCreds.accountSid = creds['twilio_accountSid'] || '';
+      providerCreds.authToken = creds['twilio_authToken'] || '';
+      providerCreds.from = creds['twilio_from'] || '';
+      providerCreds.messagingServiceSid = creds['twilio_messagingServiceSid'] || '';
+    }
+    if (provider.id === 'smsgatewayhub') {
+      providerCreds.apiKey = creds['smsgatewayhub_apiKey'] || '';
+      providerCreds.senderId = creds['smsgatewayhub_senderId'] || '';
+      providerCreds.channel = creds['smsgatewayhub_channel'] || '';
+      providerCreds.route = creds['smsgatewayhub_route'] || '';
+    }
+    if (provider.id === 'goip') {
+      providerCreds.gatewayIp = creds['goip_gatewayIp'] || '';
+      providerCreds.username = creds['goip_username'] || '';
+      providerCreds.password = creds['goip_password'] || '';
+      providerCreds.provider = creds['goip_provider'] || '';
+    }
+
+    const endpoint = typeof provider.endpoint === 'function'
+      ? provider.endpoint(providerCreds)
+      : provider.endpoint;
 
     const body = provider.bodyTemplate(providerCreds, curlPhone, curlMessage);
     let bodyStr = '';
-    let contentType = '';
+    let headers = typeof provider.headers === 'function'
+      ? provider.headers(providerCreds)
+      : { ...provider.headers };
     if (provider.id === 'textbelt') {
       bodyStr = JSON.stringify(body);
-      contentType = 'application/json';
+      headers = { 'Content-Type': 'application/json' };
     } else if (typeof body === 'string') {
       bodyStr = body;
-      contentType = 'application/x-www-form-urlencoded';
     } else {
       bodyStr = JSON.stringify(body);
-      contentType = 'application/json';
+      headers['Content-Type'] = 'application/json';
     }
 
-    let cmd = `curl -X ${provider.method} '${provider.endpoint}' \\\n`;
-    const headers = provider.headers;
+    let cmd = `curl -X ${provider.method} '${endpoint}' \\\n`;
     Object.entries(headers).forEach(([k, v]) => {
       if (k === 'Authorization' && v) {
         cmd += `  -H '${k}: ${v}' \\\n`;
@@ -376,7 +506,6 @@ export default function SmsGateway() {
     toast.success('cURL copied to clipboard');
   };
 
-  // Detect placeholders
   const hasPlaceholder = Object.values(creds).some(v => v.includes('YOUR_') || v.includes('your_') || v === '');
 
   return (
@@ -392,16 +521,17 @@ export default function SmsGateway() {
           <TabsTrigger value="curl">📋 Generate cURL</TabsTrigger>
         </TabsList>
 
-        {/* Credentials Tab */}
+        {/* ─── CREDENTIALS TAB ─── */}
         <TabsContent value="credentials">
           <Card>
             <CardHeader>
               <CardTitle>API Credentials</CardTitle>
               <CardDescription>
-                Enter your API keys. They are stored in your browser's localStorage.
+                Enter your API keys. All are stored in your browser's localStorage.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* 4jawaly */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cred_4jawaly_key">4jawaly – API Key</Label>
@@ -417,6 +547,7 @@ export default function SmsGateway() {
                 </div>
               </div>
               <hr />
+              {/* Unifonic */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cred_unifonic_appsid">Unifonic – AppSid</Label>
@@ -428,6 +559,7 @@ export default function SmsGateway() {
                 </div>
               </div>
               <hr />
+              {/* Vonage */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cred_vonage_key">Vonage – API Key</Label>
@@ -443,6 +575,7 @@ export default function SmsGateway() {
                 </div>
               </div>
               <hr />
+              {/* SMSGateway.me */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cred_smsgateway_token">SMSGateway.me – API Token</Label>
@@ -454,6 +587,7 @@ export default function SmsGateway() {
                 </div>
               </div>
               <hr />
+              {/* TextBelt */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cred_textbelt_key">TextBelt – API Key</Label>
@@ -461,6 +595,72 @@ export default function SmsGateway() {
                 </div>
                 <div className="flex items-end">
                   <span className="text-sm text-muted-foreground">⚡ Free tier: 1 message per day with key <code>textbelt</code></span>
+                </div>
+              </div>
+              <hr />
+              {/* Twilio */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_twilio_accountSid">Twilio – Account SID</Label>
+                  <Input id="cred_twilio_accountSid" value={localCreds['twilio_accountSid'] || ''} onChange={e => handleCredChange('twilio_accountSid', e.target.value)} placeholder="Your Twilio Account SID" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_twilio_authToken">Twilio – Auth Token</Label>
+                  <Input id="cred_twilio_authToken" type="password" value={localCreds['twilio_authToken'] || ''} onChange={e => handleCredChange('twilio_authToken', e.target.value)} placeholder="Your Twilio Auth Token" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_twilio_from">Twilio – From Phone Number</Label>
+                  <Input id="cred_twilio_from" value={localCreds['twilio_from'] || ''} onChange={e => handleCredChange('twilio_from', e.target.value)} placeholder="+1234567890 (optional if using Messaging Service)" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_twilio_messagingServiceSid">Twilio – Messaging Service SID</Label>
+                  <Input id="cred_twilio_messagingServiceSid" value={localCreds['twilio_messagingServiceSid'] || ''} onChange={e => handleCredChange('twilio_messagingServiceSid', e.target.value)} placeholder="MGxxxxxxxxxxxxxxxx" />
+                </div>
+              </div>
+              <hr />
+              {/* SMSGatewayHub */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_smsgatewayhub_apiKey">SMSGatewayHub – API Key</Label>
+                  <Input id="cred_smsgatewayhub_apiKey" type="password" value={localCreds['smsgatewayhub_apiKey'] || ''} onChange={e => handleCredChange('smsgatewayhub_apiKey', e.target.value)} placeholder="Your API Key" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_smsgatewayhub_senderId">SMSGatewayHub – Sender ID</Label>
+                  <Input id="cred_smsgatewayhub_senderId" value={localCreds['smsgatewayhub_senderId'] || ''} onChange={e => handleCredChange('smsgatewayhub_senderId', e.target.value)} placeholder="Your Sender ID" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_smsgatewayhub_channel">SMSGatewayHub – Channel</Label>
+                  <Input id="cred_smsgatewayhub_channel" value={localCreds['smsgatewayhub_channel'] || ''} onChange={e => handleCredChange('smsgatewayhub_channel', e.target.value)} placeholder="2 (transactional) or 1 (promotional)" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_smsgatewayhub_route">SMSGatewayHub – Route</Label>
+                  <Input id="cred_smsgatewayhub_route" value={localCreds['smsgatewayhub_route'] || ''} onChange={e => handleCredChange('smsgatewayhub_route', e.target.value)} placeholder="Route (optional)" />
+                </div>
+              </div>
+              <hr />
+              {/* GoIP */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_goip_gatewayIp">GoIP – Gateway IP</Label>
+                  <Input id="cred_goip_gatewayIp" value={localCreds['goip_gatewayIp'] || ''} onChange={e => handleCredChange('goip_gatewayIp', e.target.value)} placeholder="192.168.1.100" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_goip_username">GoIP – Username</Label>
+                  <Input id="cred_goip_username" value={localCreds['goip_username'] || ''} onChange={e => handleCredChange('goip_username', e.target.value)} placeholder="Login username" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cred_goip_password">GoIP – Password</Label>
+                  <Input id="cred_goip_password" type="password" value={localCreds['goip_password'] || ''} onChange={e => handleCredChange('goip_password', e.target.value)} placeholder="Login password" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cred_goip_provider">GoIP – Provider</Label>
+                  <Input id="cred_goip_provider" value={localCreds['goip_provider'] || ''} onChange={e => handleCredChange('goip_provider', e.target.value)} placeholder="e.g., China Mobile (optional)" />
                 </div>
               </div>
 
@@ -475,7 +675,7 @@ export default function SmsGateway() {
           </Card>
         </TabsContent>
 
-        {/* Send SMS Tab */}
+        {/* ─── SEND SMS TAB ─── */}
         <TabsContent value="send">
           <Card>
             <CardHeader>
@@ -540,7 +740,7 @@ export default function SmsGateway() {
           </Card>
         </TabsContent>
 
-        {/* Live Test Tab */}
+        {/* ─── LIVE TEST TAB ─── */}
         <TabsContent value="test">
           <Card>
             <CardHeader>
@@ -574,7 +774,7 @@ export default function SmsGateway() {
           </Card>
         </TabsContent>
 
-        {/* cURL Generator Tab */}
+        {/* ─── CURL GENERATOR TAB ─── */}
         <TabsContent value="curl">
           <Card>
             <CardHeader>
@@ -626,4 +826,4 @@ export default function SmsGateway() {
       </Tabs>
     </div>
   );
-    }
+      }
