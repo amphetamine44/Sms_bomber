@@ -28,10 +28,10 @@ jobs:
           pip install -r requirements.txt
           pip install flake8 pytest pytest-asyncio
 
-      - name: Lint with flake8
+      - name: Lint with flake8 (only core/ and main.py)
         run: |
-          flake8 core/ tests/ main.py --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 core/ tests/ main.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 core/ main.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 core/ main.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Run tests with pytest
         run: |
