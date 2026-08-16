@@ -826,4 +826,4 @@ export default function SmsGateway() {
       </Tabs>
     </div>
   );
-      }
+            }
